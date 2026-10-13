@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szabadság & Megtakarítás Kalkulátor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-16">
+
+    <!-- Fejléc -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xl">
+                    🌱
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">Szabadság & Megtakarítás Műszerfal</h1>
+                    <p class="text-xs text-slate-400">Dohányzásmentes élet, egészség & pénzügyi függetlenség</p>
+                </div>
+            </div>
+            <!-- Üzemmód választó -->
+            <div class="bg-slate-800 p-1 rounded-xl flex border border-slate-700/60">
+                <button id="btnSingle" onclick="setMode('single')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">Egyéni</button>
+                <button id="btnCouple" onclick="setMode('couple')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-emerald-500 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20">Közös (Párban)</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 pt-8 space-y-8">
+
+        <!-- Összegző kártyák -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Napi Nyereség</div>
+                <div id="cardDaily" class="text-2xl font-extrabold text-white">0 Ft</div>
+                <div class="text-xs text-slate-500 mt-1">Napi felszabadult keret</div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Havi Félretett Összeg</div>
+                <div id="cardMonthlySavings" class="text-2xl font-extrabold text-emerald-400">0 Ft</div>
+                <div id="cardMonthlySub" class="text-xs text-emerald-500/80 mt-1 font-medium">100%-os megtakarítás mellett</div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Nem Elszívott Cigaretta</div>
+                <div id="cardCigarettes" class="text-2xl font-extrabold text-sky-400">0 szál / év</div>
+                <div class="text-xs text-sky-500/80 mt-1 font-medium">Tiszta tüdő és szervezet</div>
+            </div>
+
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">10 Éves Várható Egyenleg</div>
+                <div id="card10Year" class="text-2xl font-extrabold text-amber-400">0 Ft</div>
+                <div class="text-xs text-amber-500/80 mt-1 font-medium">Befektetési hozammal</div>
+            </div>
+        </div>
+
+        <!-- Vezérlők és Grafikon -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Vezérlőpanel -->
+            <div class="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-6">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Kalkulációs Beállítások
+                </h2>
+
+                <!-- 1. Saját napi költés -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Te napi költésed:</span>
+                        <span id="lblUser1" class="font-bold text-emerald-400">2 750 Ft</span>
+                    </div>
+                    <input type="range" id="sliderUser1" min="1000" max="6000" step="100" value="2750" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500" oninput="updateAll()">
+                </div>
+
+                <!-- 2. Párod napi költése -->
+                <div id="groupUser2" class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Párod napi költése:</span>
+                        <span id="lblUser2" class="font-bold text-emerald-400">2 200 Ft</span>
+                    </div>
+                    <input type="range" id="sliderUser2" min="1000" max="6000" step="100" value="2200" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500" oninput="updateAll()">
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- 3. Megtakarítási arány csúszka -->
+                <div class="space-y-2 bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-emerald-300 font-semibold">Megtakarítási arány:</span>
+                        <span id="lblRatio" class="font-bold text-emerald-400 text-base">100%</span>
+                    </div>
+                    <input type="range" id="sliderRatio" min="10" max="100" step="5" value="100" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-400" oninput="updateAll()">
+                    <p class="text-xs text-slate-400 pt-1">
+                        A felszabadult keret <span id="lblRatioText" class="text-emerald-400 font-semibold">100%-át</span> félreteszed, míg <span id="lblSpendText" class="text-slate-200 font-semibold">0%-át</span> azonnal egyéb élvezetekre költöd.
+                    </p>
+                </div>
+
+                <!-- 4. Becsült éves hozam -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Becsült éves hozam (befektetés):</span>
+                        <span id="lblReturnRate" class="font-bold text-amber-400">5.0%</span>
+                    </div>
+                    <input type="range" id="sliderReturnRate" min="0" max="12" step="0.5" value="5.0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500" oninput="updateAll()">
+                </div>
+            </div>
+
+            <!-- Grafikon -->
+            <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-lg font-bold text-white mb-4">Vagyongyarapodás az Idő Függvényében</h2>
+                <div class="relative h-72 sm:h-80">
+                    <canvas id="savingsChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Egészségügyi Mérföldkövek -->
+        <div class="space-y-4 pt-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                A Szervezet Regenerációjának Mérföldkövei
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl space-y-2">
+                    <div class="text-xs font-bold text-sky-400 uppercase tracking-wider">20 perc - 8 óra</div>
+                    <h3 class="font-semibold text-white text-sm">Vérnyomás & Oxigén</h3>
+                    <p class="text-xs text-slate-400">A pulzus és a vérnyomás normalizálódik. A vér oxigénszintje eléri az egészséges értéket.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl space-y-2">
+                    <div class="text-xs font-bold text-sky-400 uppercase tracking-wider">48 - 72 óra</div>
+                    <h3 class="font-semibold text-white text-sm">Ízlelés & Légzés</h3>
+                    <p class="text-xs text-slate-400">Az ízlelés és szaglás jelentősen javul. A nikotin teljesen kiürül a szervezetből, a hörgők elernyednek.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl space-y-2">
+                    <div class="text-xs font-bold text-sky-400 uppercase tracking-wider">2 - 12 hét</div>
+                    <h3 class="font-semibold text-white text-sm">Vérkeringés & Tüdőkapacitás</h3>
+                    <p class="text-xs text-slate-400">A vérkeringés érezhetően javul, a sétálás és a sportolás lényegesen könnyebbé és örömtelibbé válik.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl space-y-2">
+                    <div class="text-xs font-bold text-sky-400 uppercase tracking-wider">1 - 5 év</div>
+                    <h3 class="font-semibold text-white text-sm">Szív- és Érrendszer</h3>
+                    <p class="text-xs text-slate-400">A köhögés és kifulladás megszűnik. A szívinfarktus kockázata a felére, 5 év után az agyvérzés kockázata a nem dohányzókéra csökken.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anyagi Mérföldkövek & Célok -->
+        <div class="space-y-4 pt-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Elérhető Célok és Életmód Mérföldkövek
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20">1 ÉV UTÁN</span>
+                        <span id="goal1Year" class="text-lg font-extrabold text-white">0 Ft</span>
+                    </div>
+                    <h3 class="font-bold text-slate-200">Családi Nyaralás & Utazás</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Prémium tengerparti pihenés a családdal repülőjeggyel és minőségi szállással, felejthetetlen élményekkel.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-lg border border-emerald-500/20">5 ÉV UTÁN</span>
+                        <span id="goal5Year" class="text-lg font-extrabold text-white">0 Ft</span>
+                    </div>
+                    <h3 class="font-bold text-slate-200">Megbízható Autó & Eszközök</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Egy fiatal, tehermentes családi autó vásárlása készpénzben, vagy profi munkaeszközök és otthoni fejlesztések finanszírozása.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold rounded-lg border border-amber-500/20">10 ÉV UTÁN</span>
+                        <span id="goal10Year" class="text-lg font-extrabold text-amber-400">0 Ft</span>
+                    </div>
+                    <h3 class="font-bold text-slate-200">Ingatlan Önrész & Jövő</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Saját ingatlan önrésze, vagy a gyermeked önálló életkezdésének gondtalan, teljes körű támogatása.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Kód -->
+    <script>
+        let currentMode = 'couple';
+        let chartInstance = null;
+
+        function setMode(mode) {
+            currentMode = mode;
+            const btnSingle = document.getElementById('btnSingle');
+            const btnCouple = document.getElementById('btnCouple');
+            const groupUser2 = document.getElementById('groupUser2');
+
+            if (mode === 'single') {
+                btnSingle.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20";
+                btnCouple.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+                groupUser2.classList.add('hidden');
+            } else {
+                btnCouple.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20";
+                btnSingle.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+                groupUser2.classList.remove('hidden');
+            }
+            updateAll();
+        }
+
+        function formatFt(val) {
+            return Math.round(val).toLocaleString('hu-HU') + ' Ft';
+        }
+
+        function updateAll() {
+            const user1Daily = parseFloat(document.getElementById('sliderUser1').value);
+            const user2Daily = currentMode === 'couple' ? parseFloat(document.getElementById('sliderUser2').value) : 0;
+            const ratio = parseFloat(document.getElementById('sliderRatio').value) / 100;
+            const returnRate = parseFloat(document.getElementById('sliderReturnRate').value) / 100;
+
+            // Címkék
+            document.getElementById('lblUser1').innerText = formatFt(user1Daily);
+            document.getElementById('lblUser2').innerText = formatFt(user2Daily);
+            document.getElementById('lblRatio').innerText = Math.round(ratio * 100) + '%';
+            document.getElementById('lblRatioText').innerText = Math.round(ratio * 100) + '%-át';
+            document.getElementById('lblSpendText').innerText = Math.round((1 - ratio) * 100) + '%-át';
+            document.getElementById('lblReturnRate').innerText = (returnRate * 100).toFixed(1) + '%';
+
+            // Számítások
+            const totalDaily = user1Daily + user2Daily;
+            const dailySaved = totalDaily * ratio;
+            const monthlySaved = dailySaved * 30.416;
+
+            // Cigaretta szál becslés (2200 Ft / doboz -> 20 szál / doboz -> 110 Ft / szál)
+            const approxPacksDaily = totalDaily / 2200;
+            const yearlyCigarettes = Math.round(approxPacksDaily * 20 * 365);
+
+            // Összegző kártyák
+            document.getElementById('cardDaily').innerText = formatFt(totalDaily);
+            document.getElementById('cardMonthlySavings').innerText = formatFt(monthlySaved);
+            document.getElementById('cardMonthlySub').innerText = `${Math.round(ratio * 100)}%-os félretétel (${formatFt((totalDaily * (1 - ratio)) * 30.416)}/hó szabad összeg)`;
+            document.getElementById('cardCigarettes').innerText = yearlyCigarettes.toLocaleString('hu-HU') + ' szál / év';
+
+            // Idősor adatok
+            const rawData = [];
+            const investedData = [];
+            const labels = [];
+
+            for (let year = 1; year <= 10; year++) {
+                labels.push(`${year}. év`);
+                const raw = dailySaved * 365 * year;
+                rawData.push(raw);
+
+                let invested = 0;
+                if (returnRate > 0) {
+                    const monthlyRate = returnRate / 12;
+                    const months = year * 12;
+                    invested = monthlySaved * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
+                } else {
+                    invested = raw;
+                }
+                investedData.push(invested);
+            }
+
+            // Kártyák frissítése
+            document.getElementById('card10Year').innerText = formatFt(investedData[9]);
+            document.getElementById('goal1Year').innerText = formatFt(investedData[0]);
+            document.getElementById('goal5Year').innerText = formatFt(investedData[4]);
+            document.getElementById('goal10Year').innerText = formatFt(investedData[9]);
+
+            renderChart(labels, rawData, investedData);
+        }
+
+        function renderChart(labels, rawData, investedData) {
+            const ctx = document.getElementById('savingsChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Befektetett érték (hozammal)',
+                            data: investedData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#f59e0b'
+                        },
+                        {
+                            label: 'Tiszta félretett készpénz',
+                            data: rawData,
+                            borderColor: '#10b981',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#10b981'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatFt(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                            ticks: {
+                                color: '#94a3b8',
+                                callback: function(value) {
+                                    return (value / 1000000).toFixed(1) + 'M Ft';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            updateAll();
+        };
+    </script>
+</body>
+</html>
